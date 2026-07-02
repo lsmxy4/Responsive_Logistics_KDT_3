@@ -1,3 +1,5 @@
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+
 import {
   Activity,
   BarChart,
@@ -12,12 +14,14 @@ import {
 } from "../components/icons";
 import Reveal from "../components/Reveal";
 
+const TAB_GAP = 16;
+
 const tabs = [
-  { id: "system", label: "시스템 구조" },
-  { id: "features", label: "핵심기능" },
-  { id: "dashboard", label: "대시보드" },
-  { id: "infra", label: "인프라" },
-  { id: "performance", label: "성능 수치" },
+  { id: "system", label: "시스템 구조", href: "#system" },
+  { id: "features", label: "핵심기능", href: "#features" },
+  { id: "dashboard", label: "대시보드", href: "#dashboard" },
+  { id: "infra", label: "인프라", href: "#infra" },
+  { id: "performance", label: "성능 수치", href: "#performance" },
 ];
 
 const featureCards = [
@@ -156,11 +160,93 @@ const performance = [
   },
 ];
 
-const scrollTo = (id: string) => {
-  document
-    .getElementById(id)
-    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-};
+function ArchitectureTabs() {
+  const placeholderRef = useRef<HTMLDivElement>(null);
+  const [isFixed, setIsFixed] = useState(false);
+  const [tabHeight, setTabHeight] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  const scrollToSection = (href: string) => {
+    const target = document.querySelector(href);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  useLayoutEffect(() => {
+    const header = document.querySelector("header");
+    if (!header) return;
+
+    const updateHeaderHeight = () => {
+      setHeaderHeight(header.getBoundingClientRect().height);
+    };
+    updateHeaderHeight();
+
+    const resizeObserver = new ResizeObserver(updateHeaderHeight);
+    resizeObserver.observe(header);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const placeholder = placeholderRef.current;
+    if (!placeholder) return;
+
+    const updateTabHeight = () => {
+      setTabHeight(placeholder.offsetHeight);
+    };
+
+    const handleScroll = () => {
+      updateTabHeight();
+      const rect = placeholder.getBoundingClientRect();
+      setIsFixed(rect.top <= headerHeight + TAB_GAP);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
+    window.addEventListener("load", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+      window.removeEventListener("load", handleScroll);
+    };
+  }, [headerHeight]);
+
+  return (
+    <nav
+      ref={placeholderRef}
+      className="my-8 px-4"
+      style={isFixed ? { height: tabHeight } : undefined}
+      aria-label="기술 아키텍처 섹션 이동"
+    >
+      <div
+        className={
+          isFixed
+            ? "fixed left-1/2 z-50 w-fit -translate-x-1/2"
+            : "relative mx-auto w-fit"
+        }
+        style={isFixed ? { top: headerHeight + TAB_GAP } : undefined}
+      >
+        <div className="absolute -inset-2 -z-10 rounded-full bg-white/30 blur-xl" />
+
+        <div className="flex rounded-full border border-white/50 bg-white p-1.5 shadow-lg">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => scrollToSection(tab.href)}
+              className="group relative rounded-full px-7 py-3 text-sm font-bold text-slate-500 transition-all duration-300 hover:bg-sky-500 hover:text-white hover:shadow-lg hover:shadow-sky-500/25 focus-visible:bg-sky-500 focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+            >
+              <span className="pointer-events-none absolute -top-2 left-1/2 h-3 w-3 -translate-x-1/2 scale-0 rounded-full bg-sky-400 opacity-0 shadow-[0_0_0_8px_rgba(14,165,233,0.18)] transition-all duration-300 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </nav>
+  );
+}
 
 export default function ArchitecturePage() {
   return (
@@ -186,32 +272,11 @@ export default function ArchitecturePage() {
         </div>
       </section>
 
-      <nav
-        className="sticky top-[69px] z-30 px-4 py-6"
-        aria-label="기술 아키텍처 섹션 이동"
-      >
-        <div className="relative mx-auto w-fit">
-          <div className="absolute -inset-2 -z-10 rounded-full bg-white/30 blur-xl" />
-
-          <div className="flex rounded-full border border-white/50 bg-white p-1.5 shadow-lg">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => scrollTo(tab.id)}
-                className="group relative rounded-full px-7 py-3 text-sm font-bold text-slate-500 transition-all duration-300 hover:bg-sky-500 hover:text-white hover:shadow-lg hover:shadow-sky-500/25 focus-visible:bg-sky-500 focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
-              >
-                <span className="pointer-events-none absolute -top-2 left-1/2 h-3 w-3 -translate-x-1/2 scale-0 rounded-full bg-sky-400 opacity-0 shadow-[0_0_0_8px_rgba(14,165,233,0.18)] transition-all duration-300 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100" />
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </nav>
+      <ArchitectureTabs />
 
       <section id="system" className="scroll-mt-32 px-6 pb-16 pt-8">
         <div className="mx-auto grid max-w-6xl gap-16 rounded-[28px] border border-slate-200 bg-white px-12 py-14 shadow-[0_24px_70px_rgba(15,23,42,0.08)] lg:grid-cols-[0.88fr_1.5fr] lg:items-center">
-           <Reveal variant="zoom" className="rounded-3xl bg-gradient-to-br from-slate-950 via-sky-950 to-slate-900 p-7 text-white shadow-2xl shadow-slate-300/60">
+          <Reveal variant="zoom" className="rounded-3xl bg-gradient-to-br from-slate-950 via-sky-950 to-slate-900 p-7 text-white shadow-2xl shadow-slate-300/60">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-lg font-bold text-sky-100">
                 시스템 아키텍처
@@ -317,7 +382,7 @@ export default function ArchitecturePage() {
                   ShieldCheck,
                   "text-violet-500 bg-violet-50",
                 ],
-                [
+               [
                   "Auto Scaling",
                   "트래픽 급증 시 자동 스케일아웃",
                   TrendingUp,
@@ -355,13 +420,13 @@ export default function ArchitecturePage() {
             물류 운영의 모든 단계를 스마트하게 관리하고 최적화합니다.
           </p>
           <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {featureCards.map((card) => {
+            {featureCards.map((card, index) => {
               const Icon = card.icon;
               return (
                 <Reveal
                   key={card.title}
                   as="article"
-                  delay={(featureCards.indexOf(card) % 3) * 80}
+                  delay={(index % 3) * 80}
                   className="flex items-center gap-5 rounded-2xl border border-slate-200 bg-white p-7 text-left shadow-sm"
                 >
                   <span
@@ -377,7 +442,7 @@ export default function ArchitecturePage() {
                       {card.desc}
                     </p>
                   </div>
-                 </Reveal>
+                </Reveal>
               );
             })}
           </div>
@@ -589,13 +654,13 @@ export default function ArchitecturePage() {
             최신 기술로 구축된 안정적이고 확장 가능한 플랫폼
           </p>
           <div className="mt-10 grid overflow-hidden bg-white md:grid-cols-3 lg:grid-cols-6">
-            {stacks.map((stack) => {
+            {stacks.map((stack, index) => {
               const Icon = stack.icon;
               return (
                 <Reveal
                   key={stack.title}
                   as="article"
-                  delay={(stacks.indexOf(stack) % 6) * 70}
+                  delay={(index % 6) * 70}
                   className="border border-slate-100 p-9"
                 >
                   <span
@@ -626,14 +691,14 @@ export default function ArchitecturePage() {
             실제 운영 환경에서 검증된 안정적인 성능
           </p>
           <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {performance.map((item) => {
+            {performance.map((item, index) => {
               const Icon = item.icon;
               return (
                 <Reveal
                   key={item.label}
                   as="article"
                   variant="zoom"
-                  delay={(performance.indexOf(item) % 4) * 90}
+                  delay={(index % 4) * 90}
                   className="rounded-2xl border border-white/10 bg-white/10 p-10 shadow-xl shadow-slate-950/20"
                 >
                   <span
@@ -650,7 +715,7 @@ export default function ArchitecturePage() {
                     {item.label}
                   </p>
                   <p className="mt-5 text-sm text-sky-200">{item.desc}</p>
-                 </Reveal>
+                </Reveal>
               );
             })}
           </div>
