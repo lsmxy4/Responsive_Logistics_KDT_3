@@ -6,6 +6,7 @@ import ArchitecturePage from './pages/ArchitecturePage'
 import SupportPage from './pages/SupportPage'
 import SupportNewPage from './pages/SupportNewPage'
 import SupportDetailPage from './pages/SupportDetailPage'
+import ResourcesPage from './pages/ResourcesPage'
 import NotFoundPage from './pages/NotFoundPage'
 
 const router = createBrowserRouter([
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
       { path: '/service', element: <BlankPage /> },
       { path: '/architecture', element: <ArchitecturePage /> },
       { path: '/monitoring', element: <BlankPage /> },
+      { path: '/resources', element: <ResourcesPage /> },
       { path: '/support', element: <SupportPage /> },
       { path: '/support/new', element: <SupportNewPage /> },
       { path: '/support/:id', element: <SupportDetailPage /> },
